@@ -1,18 +1,19 @@
 
-
-
 http = require('http');
 const fs = require('fs');
+const querystring = require('querystring');
 //create  server
 const PORT = process.env.PORT || 8080;
 const server = http.createServer((request, response) => {
   let method = request.method;
+  let version = request.httpVersion
   let url = request.url;
-
+  let body = [];
+  let reqSettings = {method:method, version:version, url:url ,body:body};
 
   
-  console.log('method:', request.method);
-  console.log('version:', request.httpVersion);
+  console.log('method:', method);
+  console.log('version:', version);
   console.log('url:', url);
   
   
@@ -28,11 +29,10 @@ const server = http.createServer((request, response) => {
     }
     break;
     case "POST":
-    if (url){
-      postData(request,response);
-    }
+    postData(request,response);
+    
     default:
-    err404 (request, response)
+    err405 (request, response)
     break;
   }
 
@@ -77,7 +77,7 @@ function err404 (request, response) {
     }
     else {
       response.writeHead(404, "Error");
-      response.write(data);
+      // response.write(data);
       response.end();
     }
   });
@@ -89,25 +89,48 @@ function err404 (request, response) {
 // test functions
 
 function postData(request,response) {
+  let method = request.method;
+  let headers = request.method;
+  let url = request.url;
+  
+  
+  request.on('data',function(chunk) {
+    let chunkString = chunk.toString();
+    console.log(chunk.toString());
+    let body = querystring.parse(chunkString);
+    console.log(body);
+ 
+  fs.writeFile("/public" + `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>The Elements - ${body.name}</title>
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    <h1>${body.name}</h1>
+    <h2>${body.symbol}</h2>
+    <h3>${body.atnum}</h3>
+    <p>${body.description}</p>
+    <p><a href="/">back</a></p>
+  </body>
+  </html>`) 
+});
+  response.writeHead(200, {"Content-type" : "application/json"});
+  
+  let reqSettings = {method:method, headers:headers, url:url };
+
+response.end(JSON.stringify(reqSettings));
+
+}
   
 
-  let body = '';
-  request.on('data', function (data) {
-      body += data;
-      console.log("body: " + body);
-  });
-  request.on('end', function () {
-      console.log("Body: " + body);
-  });
-  response.writeHead(200, "OK");
-  response.end();
-}
 
-// function err405 (request, response) {
-//   response.writeHead(405, "Method Not Supported");
-//         response.write("<html><body>405: Method not supported. Go to <a href='/index.html'>homepage</a></body></html>");
-//         response.end();
-// }
+function err405 (request, response) {
+  response.writeHead(405, "Method Not Supported");
+        response.write("<html><body>405: Method not supported. Go to <a href='/index.html'>homepage</a></body></html>");
+        response.end();
+}
 
 
 
@@ -144,3 +167,5 @@ function postData(request,response) {
 // let public = 
 //   response.write(JSON.stringify(responseBody));
 //   response.end();
+//let posturl = parse.elementalname.tolowercase
+//{postUrl}
